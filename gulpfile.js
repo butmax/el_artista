@@ -1,29 +1,87 @@
-const { src, dest, parallel } = require('gulp');
-const pug = require('gulp-pug');
-const less = require('gulp-less');
-const minifyCSS = require('gulp-csso');
+const gulp = require('gulp');
+//const sass = require('gulp-sass');
+const autoprefixer = require('gulp-autoprefixer');
+const babel = require('gulp-babel');
 const concat = require('gulp-concat');
+const uglify = require('gulp-uglify');
+const rename = require('gulp-rename');
+const cleanCSS = require('gulp-clean-css');
+const del = require('del');
+const browserSync = require('browser-sync').create();
 
-function html() {
-    return src('client/templates/*.pug')
-        .pipe(pug())
-        .pipe(dest('build/html'))
+
+let paths = {
+    styles: {
+        src: './src/css/**/*.css',
+        dest: './app/css/'
+    },
+    scripts: {
+        src: './src/js/**/*.js',
+        dest: './app/js/'
+    }
+};
+
+
+function clean() {
+    return del(['./app/*']);
 }
 
-function css() {
-    return src('client/templates/*.less')
-        .pipe(less())
-        .pipe(minifyCSS())
-        .pipe(dest('build/css'))
+
+function styles() {
+    return gulp.src(paths.styles.src)
+        //.pipe(sass())
+        .pipe(autoprefixer({
+            browsers: ['> 0.1%'],
+            cascade: false
+        }))
+        .pipe(cleanCSS({
+            level: 2
+        }))
+        .pipe(rename({
+            basename: 'main',
+            suffix: '.min'
+        }))
+        .pipe(gulp.dest(paths.styles.dest))
+        .pipe(browserSync.stream());
 }
 
-function js() {
-    return src('client/javascript/*.js', { sourcemaps: true })
-        .pipe(concat('app.min.js'))
-        .pipe(dest('build/js', { sourcemaps: true }))
+
+function scripts() {
+    return gulp.src(paths.scripts.src, { sourcemaps: true })
+        .pipe(babel({
+            presets: ['@babel/env']
+        }))
+        .pipe(uglify({
+            toplevel: true
+        }))
+        .pipe(concat('main.min.js'))
+        .pipe(gulp.dest(paths.scripts.dest))
+        .pipe(browserSync.stream());
 }
 
-exports.js = js;
-exports.css = css;
-exports.html = html;
-exports.default = parallel(html, css, js);
+function watch() {
+    browserSync.init({
+        server: {
+            baseDir: "./"
+        }
+    });
+    gulp.watch(paths.scripts.src, scripts);
+    gulp.watch(paths.styles.src, styles);
+    gulp.watch("./*.html", browserSync.reload);
+}
+
+
+
+
+
+gulp.task('build', gulp.series(clean,
+                    gulp.parallel(styles, scripts)));
+
+
+exports.clean = clean;
+exports.styles = styles;
+exports.scripts = scripts;
+exports.watch = watch;
+
+
+exports.default = watch;
