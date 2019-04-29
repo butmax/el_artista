@@ -1,5 +1,5 @@
 const gulp = require('gulp');
-//const sass = require('gulp-sass');
+const sass = require('gulp-sass');
 const autoprefixer = require('gulp-autoprefixer');
 const babel = require('gulp-babel');
 const concat = require('gulp-concat');
@@ -12,11 +12,14 @@ const browserSync = require('browser-sync').create();
 
 let paths = {
     styles: {
-        src: './src/css/**/*.css',
+        src: './src/sass/**/*.sass',
         dest: './app/css/'
     },
     scripts: {
-        src: './src/js/**/*.js',
+        src: './src/js/main.js',
+        static: [
+            './src/js/particles.min.js',
+        ],
         dest: './app/js/'
     }
 };
@@ -29,7 +32,7 @@ function clean() {
 
 function styles() {
     return gulp.src(paths.styles.src)
-        //.pipe(sass())
+        .pipe(sass())
         .pipe(autoprefixer({
             browsers: ['> 0.1%'],
             cascade: false
@@ -59,6 +62,8 @@ function scripts() {
         .pipe(browserSync.stream());
 }
 
+
+
 function watch() {
     browserSync.init({
         server: {
@@ -67,15 +72,18 @@ function watch() {
     });
     gulp.watch(paths.scripts.src, scripts);
     gulp.watch(paths.styles.src, styles);
-    gulp.watch("./*.html", browserSync.reload);
+    gulp.watch("*.html", browserSync.reload);
 }
-
-
-
 
 
 gulp.task('build', gulp.series(clean,
                     gulp.parallel(styles, scripts)));
+
+
+function static() {
+    return gulp.src(paths.scripts.static)
+            .pipe(gulp.dest(paths.scripts.dest));
+}
 
 
 exports.clean = clean;
@@ -84,4 +92,4 @@ exports.scripts = scripts;
 exports.watch = watch;
 
 
-exports.default = watch;
+exports.default = gulp.series('build', static, watch);
