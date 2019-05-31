@@ -21,6 +21,10 @@ let paths = {
             './src/js/particles.min.js',
         ],
         dest: './app/js/'
+    },
+    fonts: {
+        src: './fonts/**/*.*',
+        dest: './app/fonts/'
     }
 };
 
@@ -80,9 +84,14 @@ gulp.task('build', gulp.series(clean,
                     gulp.parallel(styles, scripts)));
 
 
-function static() {
+function statics() {
+    return gulp.src(paths.fonts.src)
+        .pipe(gulp.dest(paths.fonts.dest));
+}
+
+function staticScripts() {
     return gulp.src(paths.scripts.static)
-            .pipe(gulp.dest(paths.scripts.dest));
+        .pipe(gulp.dest(paths.scripts.dest));
 }
 
 
@@ -90,6 +99,8 @@ exports.clean = clean;
 exports.styles = styles;
 exports.scripts = scripts;
 exports.watch = watch;
+exports.statics = statics;
+exports.staticScripts = staticScripts;
 
 
-exports.default = gulp.series('build', static, watch);
+exports.default = gulp.series('build', gulp.parallel(statics, staticScripts, watch));
